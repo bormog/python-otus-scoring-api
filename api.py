@@ -12,6 +12,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from weakref import WeakKeyDictionary
 import scoring
 import re
+from collections import namedtuple
 
 SALT = "Otus"
 ADMIN_LOGIN = "admin"
@@ -37,6 +38,8 @@ GENDERS = {
     MALE: "male",
     FEMALE: "female",
 }
+
+Response = namedtuple('Response', ['response', 'code'])
 
 
 class ValidationError(ValueError):
@@ -236,7 +239,7 @@ def clients_interest_handler(request, ctx, store):
     ctx['nclients'] = len(model.client_ids)
 
     response = {x: scoring.get_interests(store, x) for x in model.client_ids}
-    return response, OK
+    return Response(response, OK)
 
 
 def online_score_handler(request, ctx, store):
@@ -256,7 +259,7 @@ def online_score_handler(request, ctx, store):
                                   first_name=model.first_name,
                                   last_name=model.last_name)
         response, code = dict(score=score), OK
-    return response, code
+    return Response(response, code)
 
 
 def get_handler(method):
@@ -270,29 +273,27 @@ def get_handler(method):
 def method_handler(request, ctx, store):
     request_dict = request.get('body')
     if not isinstance(request_dict, dict):
-        code = INVALID_REQUEST
-        response = 'Request body must be a valid dictionary'
-        return response, code
+        return Response(response='Request body must be a valid dictionary', code=INVALID_REQUEST)
 
     try:
         method_request = MethodRequest(**request_dict)
         method_request.validate()
     except ValidationError as e:
         logging.exception(e)
-        return str(e), INVALID_REQUEST
+        return Response(response=str(e), code=INVALID_REQUEST)
 
     if not check_auth(method_request):
-        return None, FORBIDDEN
+        return Response(response=None, code=FORBIDDEN)
 
     handler = get_handler(method_request.method)
     if not handler:
-        return 'Unknown method %s' % str(method_request.method), INVALID_REQUEST
+        return Response(response='Unknown method %s' % str(method_request.method), code=INVALID_REQUEST)
 
     try:
         return handler(request=method_request, ctx=ctx, store=store)
     except ValidationError as e:
         logging.exception(e)
-        return str(e), INVALID_REQUEST
+        return Response(response=str(e), code=INVALID_REQUEST)
 
 
 class MainHTTPHandler(BaseHTTPRequestHandler):
