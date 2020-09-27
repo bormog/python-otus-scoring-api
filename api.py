@@ -47,8 +47,6 @@ class ValidationError(ValueError):
 
 
 class BaseField(metaclass=abc.ABCMeta):
-    """
-    """
 
     def __init__(self, required=False, nullable=False):
         self.required = required
@@ -115,18 +113,28 @@ class BirthDayField(DateField):
             raise ValidationError("too old, max 70 years")
 
 
-class GenderField(BaseField):
+class NumericField(BaseField):
     def validate(self, value):
         if not isinstance(value, int):
-            raise ValidationError('gender must be 0, 1 or 2')
+            raise ValidationError('must be int')
+
+
+class GenderField(NumericField):
+    def validate(self, value):
+        super(GenderField, self).validate(value)
         if value not in GENDERS.keys():
             raise ValidationError('gender must be 0, 1 or 2')
 
 
-class ClientIDsField(BaseField):
+class ListField(BaseField):
     def validate(self, value):
         if not isinstance(value, list):
             raise ValidationError('must be a list')
+
+
+class ClientIDsField(ListField):
+    def validate(self, value):
+        super(ClientIDsField, self).validate(value)
         for v in value:
             if not isinstance(v, int):
                 raise ValidationError('must be a list of int')
