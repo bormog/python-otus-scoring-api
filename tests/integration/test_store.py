@@ -28,6 +28,7 @@ class TestRedisStore(unittest.TestCase):
         finally:
             time.sleep(10)
             cls.store = RedisStore()
+            cls.store.connect()
 
     @classmethod
     def tearDownClass(cls):

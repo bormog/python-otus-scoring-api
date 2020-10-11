@@ -34,10 +34,14 @@ def retry(raise_on_failure=True):
 class RedisStore(object):
 
     client = None
+    params = {}
 
     def __init__(self, **kwargs):
+        self.params = kwargs
+
+    def connect(self):
         try:
-            self.client = redis.Redis(**kwargs)
+            self.client = redis.Redis(**self.params)
             self.client.ping()
         except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
             raise
