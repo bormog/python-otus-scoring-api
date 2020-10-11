@@ -64,5 +64,7 @@ python api.py
 
 ### Тесты
 ```sh
-python -m unittest -v test
+python -m unittest discover tests.unit -v
+python -m unittest discover tests.integration -v
+python -m unittest discover tests.functional -v
 ```
