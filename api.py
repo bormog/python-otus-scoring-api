@@ -13,6 +13,7 @@ from weakref import WeakKeyDictionary
 import scoring
 import re
 from collections import namedtuple
+from store import RedisStore
 
 SALT = "Otus"
 ADMIN_LOGIN = "admin"
@@ -75,16 +76,14 @@ class CharField(BaseField):
 
 class ArgumentsField(BaseField):
     def validate(self, value):
-        try:
-            json.loads(json.dumps(value))
-        except Exception:
-            raise ValidationError('%s is not valid json' % value)
+        if not isinstance(value, dict):
+            raise ValidationError('%s is not a dict' % value)
 
 
 class EmailField(CharField):
     def validate(self, value):
         super(EmailField, self).validate(value)
-        if '@' not in value:
+        if not re.match(r'^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$', value):
             raise ValidationError('email must contain @')
 
 
@@ -111,6 +110,8 @@ class BirthDayField(DateField):
         datetime_obj = datetime.datetime.strptime(value, '%d.%m.%Y')
         if datetime.datetime.now().year - datetime_obj.year > self.MAX_AGE:
             raise ValidationError("too old, max 70 years")
+        if datetime_obj > datetime.datetime.now():
+            raise ValidationError('date cant be in future')
 
 
 class NumericField(BaseField):
@@ -308,7 +309,7 @@ class MainHTTPHandler(BaseHTTPRequestHandler):
     router = {
         "method": method_handler
     }
-    store = None
+    store = RedisStore(socket_connect_timeout=30)
 
     def get_request_id(self, headers):
         return headers.get('HTTP_X_REQUEST_ID', uuid.uuid4().hex)

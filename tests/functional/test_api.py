@@ -1,27 +1,26 @@
 import hashlib
 import datetime
-import functools
 import unittest
-
+from unittest.mock import Mock
+import logging
 import api
-
-
-def cases(cases):
-    def decorator(f):
-        @functools.wraps(f)
-        def wrapper(*args):
-            for c in cases:
-                new_args = args + (c if isinstance(c, tuple) else (c,))
-                f(*new_args)
-        return wrapper
-    return decorator
+from tests.helpers import cases
 
 
 class TestSuite(unittest.TestCase):
     def setUp(self):
         self.context = {}
         self.headers = {}
-        self.settings = {}
+        self.settings = Mock(
+                cache_get=Mock(return_value=0),
+                cache_set=Mock(return_value=True),
+                get=Mock(return_value=[b"foo", b"bar"]),
+                set=Mock(return_value=True)
+        )
+        logging.disable(logging.CRITICAL)
+
+    def tearDown(self):
+        logging.disable(logging.NOTSET)
 
     def get_response(self, request):
         return api.method_handler({"body": request, "headers": self.headers}, self.context, self.settings)
