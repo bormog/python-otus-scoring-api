@@ -31,6 +31,7 @@ class TestGetInterests(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        cls.store.close()
         cls.container.stop()
 
     def setUp(self):

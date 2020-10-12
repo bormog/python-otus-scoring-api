@@ -46,6 +46,9 @@ class RedisStore(object):
         self.client = redis.Redis(**self.params)
         self.client.ping()
 
+    def close(self):
+        self.client.close()
+
     @retry(raise_on_failure=True)
     def set(self, key, *values):
         return self.client.sadd(key, *values)
