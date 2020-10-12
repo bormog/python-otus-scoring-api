@@ -27,24 +27,24 @@ class TestStoreConnection(unittest.TestCase):
     def tearDown(self):
         logging.disable(logging.NOTSET)
 
-    @patch('store.REDIS_WAIT_TIME', 0)
-    @patch('store.REDIS_RETRY_COUNT', 1)
+    @patch('store.REDIS_RETRY_DELAY', 0)
+    @patch('store.REDIS_RETRY_MAX_ATTEMPTS', 1)
     def test_store_cache_set_no_failure(self):
         try:
             self.storage.cache_set('foo', 'bar', 1)
         except (TimeoutError, ConnectionError):
             self.fail('Method cache_set raises exception.')
 
-    @patch('store.REDIS_WAIT_TIME', 0)
-    @patch('store.REDIS_RETRY_COUNT', 1)
+    @patch('store.REDIS_RETRY_DELAY', 0)
+    @patch('store.REDIS_RETRY_MAX_ATTEMPTS', 1)
     def test_store_cache_get_no_failure(self):
         try:
             self.storage.cache_get('foo')
         except (TimeoutError, ConnectionError):
             self.fail('Method cache_get raises exception.')
 
-    @patch('store.REDIS_WAIT_TIME', 0)
-    @patch('store.REDIS_RETRY_COUNT', 5)
+    @patch('store.REDIS_RETRY_DELAY', 0)
+    @patch('store.REDIS_RETRY_MAX_ATTEMPTS', 5)
     def test_store_retry_count_ok(self):
         with self.assertRaises(ConnectionError):
             self.storage.get('foo')

@@ -3,8 +3,8 @@ import redis
 import time
 import logging
 
-REDIS_RETRY_COUNT = 3
-REDIS_WAIT_TIME = 0.2
+REDIS_RETRY_MAX_ATTEMPTS = 3
+REDIS_RETRY_DELAY = 0.2
 
 
 def retry(raise_on_failure=True):
@@ -13,15 +13,15 @@ def retry(raise_on_failure=True):
 
         def wrapper(*args, **kwargs):
             last_exception = None
-            for i in range(REDIS_RETRY_COUNT):
+            for i in range(REDIS_RETRY_MAX_ATTEMPTS):
                 try:
                     return method(*args, **kwargs)
                 except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError) as e:
                     last_exception = e
-                    time.sleep(REDIS_WAIT_TIME)
+                    time.sleep(REDIS_RETRY_DELAY)
 
             if last_exception is not None:
-                msg = 'Method %s was failed after %d attempts' % (method, REDIS_RETRY_COUNT)
+                msg = 'Method %s was failed after %d attempts' % (method, REDIS_RETRY_MAX_ATTEMPTS)
                 logging.exception(msg, exc_info=last_exception)
 
             if raise_on_failure:
