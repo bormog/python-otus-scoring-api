@@ -39,12 +39,10 @@ class RedisStore(object):
     def __init__(self, **kwargs):
         self.params = kwargs
 
+    @retry(raise_on_failure=True)
     def connect(self):
-        try:
-            self.client = redis.Redis(**self.params)
-            self.client.ping()
-        except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError):
-            raise
+        self.client = redis.Redis(**self.params)
+        self.client.ping()
 
     @retry(raise_on_failure=True)
     def set(self, key, *values):

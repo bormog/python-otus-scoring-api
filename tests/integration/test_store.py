@@ -26,7 +26,6 @@ class TestRedisStore(unittest.TestCase):
                 detach=True
             )
         finally:
-            time.sleep(10)
             cls.store = RedisStore()
             cls.store.connect()
 
