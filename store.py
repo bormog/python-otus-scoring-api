@@ -7,20 +7,26 @@ REDIS_RETRY_MAX_ATTEMPTS = 3
 REDIS_RETRY_DELAY = 0.1
 
 
-def retry(raise_on_failure=True):
+def retry(raise_on_failure=True, retry_max_attempts=None, retry_delay=None):
 
     def retry_on_failure(method):
 
         def wrapper(*args, **kwargs):
+            nonlocal retry_max_attempts, retry_delay
+
+            if retry_max_attempts is None:
+                retry_max_attempts = REDIS_RETRY_MAX_ATTEMPTS
+            if retry_delay is None:
+                retry_delay = REDIS_RETRY_DELAY
+
             last_exception = None
-            delay = REDIS_RETRY_DELAY
-            for i in range(REDIS_RETRY_MAX_ATTEMPTS):
+            for i in range(retry_max_attempts):
                 try:
                     return method(*args, **kwargs)
                 except (redis.exceptions.ConnectionError, redis.exceptions.TimeoutError) as e:
                     last_exception = e
-                    time.sleep(delay)
-                    delay *= 2
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
 
             if last_exception is not None:
                 msg = 'Method %s was failed after %d attempts' % (method, REDIS_RETRY_MAX_ATTEMPTS)

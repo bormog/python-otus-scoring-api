@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import unittest
+import logging
+from unittest.mock import Mock
 from store import RedisStore
 from tests.helpers import cases
 import time
 import docker
 from docker.errors import NotFound
+from redis.exceptions import ConnectionError
 
 
 class TestRedisStore(unittest.TestCase):
@@ -27,18 +30,19 @@ class TestRedisStore(unittest.TestCase):
             )
         finally:
             cls.store = RedisStore()
-            cls.store.connect()
 
     @classmethod
     def tearDownClass(cls):
-        cls.store.close()
         cls.container.stop()
 
     def setUp(self):
-        pass
+        logging.disable(logging.CRITICAL)
+        self.store.connect()
 
     def tearDown(self):
+        logging.disable(logging.NOTSET)
         self.store.client.flushdb()
+        self.store.close()
 
     @cases([
         ['foo', b'bar'],
@@ -78,3 +82,17 @@ class TestRedisStore(unittest.TestCase):
     ])
     def test_storage_get_not_exists(self, key):
         self.assertEqual(self.store.get(key), set())
+
+    def test_storage_set_get_after_lost_connection(self):
+        self.store.client = Mock(
+            sadd=Mock(side_effect=ConnectionError),
+            smembers=Mock(side_effect=ConnectionError),
+            set=Mock(side_effect=ConnectionError),
+            get=Mock(side_effect=ConnectionError),
+        )
+
+        with self.assertRaises(ConnectionError):
+            self.store.set('foo', 'foobar')
+
+        with self.assertRaises(ConnectionError):
+            self.store.get('foo')
